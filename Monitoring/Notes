@@ -1,0 +1,533 @@
+
+1. Continuous Monitoring:
+====================================
+Continuous Monitoring it is a practice in Devops that  involves
+ - collection of Metrics that we have to monitor 
+ - Analysis of the metrics
+ - Visualization of the metrics and data 
+ - real time monitoring of clusters, containers, tools, applications, network
+ - proactively detecting the issues.
+ - helps is timely correcting and optimizing the system and application
+
+Continuous Monitoring it is a practice done 
+ - using monitoring tools 
+    - using these tools we collect metrics , Analysis and visualize them 
+
+Continuous Monitoring it is a practice that will
+  - monitor Servers/VM
+  - monitor your pipelines/workflows
+  - monitor services on cloud 
+  - monitor clusters
+  - network devices
+  - applications/databases
+
+The main goal is to gain insights of the 
+ - System/application behaviour, 
+ - identify bottelnecks
+ - take necessary actions 
+ - so as to get reliable system 
+
+
+Components of Continuous Monitoring:
+1. Data collection: monitoring agents -> scraping metrics
+  example:  application - logs 
+            cluster - metrics(cpu, memory, network)  
+Example: logstash, fluent beats, Prometheus
+
+2. Data Analysis: 
+      The collected data is analyzed to identify patterns, trends, conditions and anomalies
+      and find performance issues, security threats and failures.
+Example: Elastic Search, Prometheus
+
+3. Visualization dashboards:
+           Tools provides us dashboards where we can see all the metrics and data 
+Example: Kibana, GRAFANA(integrates with Prometheus or cloudwatch or data dog, mysql to get the metrics/data)
+      
+4. Alerting and Notification:
+     Monitoring tools connect with alert and notification tools like : slack, teams, email
+
+
+EXAMPLE: NAGIOS, ELK
+
+
+Demo 1: 
+
+Install Prometheus on a VM 
+Install Jenkins --> monitoring it using Prometheus
+Install Grafana on the same VM --> pass jenkins data from Prometheus to Grafana 
+Monitor the data on Grafana 
+
+Demo 2:
+
+Kubernetes cluster 
+Using Helm deploy Prometheus and grafana as pods 
+Access them from browser 
+and monitor the cluster 
+Create our own dashboard on grafana using Prometheus queries
+
+
+
+Prometheus:
+======================
+- open source tool 
+- data collection tool 
+- collects metrics 
+
+
+
+Prometheus Architecture:
+
+
+
+To install and configure Prometheus and Grafana as monitoring and visualization tools, you can follow the steps below:
+ 
+Create a system user for Prometheus using below commnds:
+sudo useradd --no-create-home --shell /bin/false prometheus
+ 
+Create the directories in which we will be storing our configuration files and libraries:
+sudo mkdir /etc/prometheus
+sudo mkdir /var/lib/prometheus
+Set the ownership of the /var/lib/prometheus directory with below command:
+sudo chown prometheus:prometheus /var/lib/prometheus
+You need to inside /tmp :
+cd /tmp/
+Go to official pgae downloads Prometheus:
+ 
+https://prometheus.io/download/#prometheus
+ 
+# wget https://github.com/prometheus/prometheus/releases/download/v3.0.0/prometheus-3.0.0.linux-amd64.tar.gz
+ 
+# wget https://github.com/prometheus/prometheus/releases/download/v3.6.0-rc.0/prometheus-3.6.0-rc.0.linux-amd64.tar.gz
+# sudo tar -xvf prometheus-3.6.0-rc.0.linux-amd64.tar.gz
+Move the configuration file and set the owner to the prometheus
+cd prometheus-3.6.0-rc.0.linux-amd64
+sudo mv promtool /etc/prometheus
+sudo mv prometheus.yml /etc/prometheus
+sudo chown -R prometheus:prometheus /etc/prometheus
+Move the binaries and set the owner:
+sudo mv prometheus /usr/local/bin/
+sudo chown prometheus:prometheus /usr/local/bin/prometheus
+Create the service file using below command:
+sudo nano /etc/systemd/system/prometheus.service
+[Unit]
+Description=Prometheus
+Wants=network-online.target
+After=network-online.target
+ 
+[Service]
+User=prometheus
+Group=prometheus
+Type=simple
+ExecStart=/usr/local/bin/prometheus \
+    --config.file /etc/prometheus/prometheus.yml \
+    --storage.tsdb.path /var/lib/prometheus/ \
+    --web.console.templates=/etc/prometheus/consoles \
+    --web.console.libraries=/etc/prometheus/console_libraries
+ 
+[Install]
+WantedBy=multi-user.target
+ 
+Reload systemd:
+sudo systemctl daemon-reload
+ 
+Start and enable Prometheus service:
+sudo systemctl start prometheus
+sudo systemctl enable prometheus
+sudo systemctl status prometheus
+Now access Prometehus in your browser
+<server-ip>:9090
+Step #2:Install Node Exporter on Ubuntu 22.04 LTS
+# wget https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
+# sudo tar xvfz node_exporter-*.*-amd64.tar.gz
+ 
+Move the binary file of node exporter to /usr/local/bin location.
+sudo mv node_exporter-*.*-amd64/node_exporter /usr/local/bin/
+ 
+Create a node_exporter user to run the node exporter service
+sudo useradd -rs /bin/false node_exporter
+Create a Custom Node Exporter Service
+sudo nano /etc/systemd/system/node_exporter.service
+[Unit]
+ 
+Description=Node Exporter
+ 
+After=network.target
+ 
+ 
+ 
+[Service]
+ 
+User=node_exporter
+ 
+Group=node_exporter
+ 
+Type=simple
+ 
+ExecStart=/usr/local/bin/node_exporter
+ 
+ 
+ 
+[Install]
+WantedBy=multi-user.target
+=======================
+Reload the systemd
+sudo systemctl daemon-reload
+ 
+To Start, enable node exporter:
+sudo systemctl enable node_exporter
+sudo systemctl start node_exporter
+sudo systemctl status node_exporter
+Lets update our configuration file using below command:
+sudo nano /etc/prometheus/prometheus.yml
+- job_name: 'Node_Exporter'
+ 
+    scrape_interval: 5s
+ 
+    static_configs:
+ 
+      - targets: ['<Server_IP_of_Node_Exporter_Machine>:9100']
+After changes any configuration file we need to restart our prometheus
+sudo systemctl restart prometheus.service
+ 
+Step #3:Install Grafana on Ubuntu 22.04 LTS
+Download the Grafana GPG key with wget, then pipe the output to apt-key. This will add the key to your APT installation’s list of trusted keys, which will allow you to download and verify the GPG-signed Grafana package:
+wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
+Next, add the Grafana repository to your APT sources:
+sudo add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
+Refresh your APT cache to update your package lists:
+sudo apt update
+You can now proceed with the installation:
+sudo apt install grafana
+Once Grafana is installed, use systemctl to start the Grafana server:
+sudo systemctl start grafana-server
+Next, verify that Grafana is running by checking the service’s status:
+sudo systemctl status grafana-server
+sudo systemctl enable grafana-server
+Lets Access in browser:
+<instance_ip>:3000
+Output:
+default username: admin
+default password: admin
+Click Add data source and select Prometheus
+For the URL, enter http://localhost:9090 and click Save and test. You can see Data source is working.
+Click on Save and Test.
+Let’s add Dashboard for a better view in Grafana
+Click On Dashboard → + symbol → Import Dashboard
+Click on Import Dashboard paste this code 1860 and click on load
+ 
+Step #4:Install Jenkins on Ubuntu 22.04 LTS
+Installation of Java:
+sudo apt update
+sudo apt install fontconfig openjdk-17-jre
+java -version
+Install Jenkins from official website
+Setup dashboard → install prometheus plugin -> restart Jenkins
+To create a static target, you need to add job_name with static_configs
+sudo vim /etc/prometheus/prometheus.yml
+ 
+Paste below code
+- job_name: 'jenkins'
+   metrics_path: '/prometheus'
+   static_configs:
+     - targets: ['<jenkins-ip>:8080']
+After changes in config file we need to restart prometheus
+sudo systemctl restart prometheus
+Check the targets section
+http://<ip>:9090/targets
+=============
+Let’s add Dashboard for a better view in Grafana
+Click On Dashboard → + symbol → Import Dashboard
+Use Id 9964 and click on load
+==============================================================
+In Grafana we can create various kinds of dashboards as per our need
+
+Click on new --> New dashboard --> Click on Add Visalization --> Select Data source
+
+Add below query one by one in metric field --> click on run query --> change panel name --> change form time services to stat
+
+click on Save dashboard
+
+
+The below query will fetch the number of inactive plugins
+jenkins_plugins_inactive{}
+
+Click Add --> visualization --> again add the metric.
+
+
+The below query will fetch the number of failed plugins
+jenkins_plugins_failed{}
+
+ The below query will fetch the number of plugins which required the update
+jenkins_plugins_withUpdate{}
+
+jenkins_job_count_value
+
+Last build duration
+
+default_jenkins_builds_last_build_duration_milliseconds
+
+=====================================================
+
+Install prometheus using HELM:
+=====================
+
+On linux OS we have package managers like yum or apt which we use to isntall package
+
+ like:  yum install git
+          apt-get install httpd
+
+
+Helm is a package manager of kubernetes which comes with set of YAML files (pre-written) which when executed will install softwares or tools on the kubernetes cluster
+
+So if we have to install open source tools or applications on kubernetes cluster we can use HELM
+
+
+Install using Helm
+===========================
+Add helm repo
+
+# helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+Update helm repo
+
+# helm repo update
+
+Install helm
+
+# helm install prometheus prometheus-community/prometheus
+
+Expose Prometheus Service
+
+This is required to access prometheus-server using your browser.
+
+# kubectl expose service prometheus-server --type=NodePort --target-port=9090 --name=prometheus-server-ext
+
+In the kubernetes master node run the queries
+
+# kubectl get pods
+
+# kubectl get svc
+
+Go to the browser:
+
+take the public ip of the masternode and nodeport number
+
+example: http://34.170.213.215:31753/
+
+You will see prometheous dashboard
+
+Now Execute below queries to complete assignment:
+
+kube_pod_container_resource_limits
+
+
+Grafana:
+
+Install using Helm
+Add helm repo
+helm repo add grafana https://grafana.github.io/helm-charts
+
+Update helm repo
+helm repo update
+
+Install helm
+helm install grafana grafana/grafana
+
+
+Username is admin and get password by running below command:
+
+kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+
+
+Bw30JqmDrRsA0h0Sxr6slRzrlHSmud875O7liCGe
+
+
+Expose Grafana Service
+kubectl expose service grafana --type=NodePort --target-port=3000 --name=grafana-ext
+
+
+Loginto grafana: username will be admin and password will be the text that we copied earlier
+
+Step 1: In grafana we will now setup the Data source:
+==================================
+Click on Data source --> scroll down -- to add prometheous URL field. Copy the prometheous dashboard URL -> https://ipaddress:portnumber
+
+Scroll down --> click on save and test
+
+Grafana will now be able to fetch data from prometheous
+
+Step 2: Import dashboard to display the Data
+
+Go to Homepage of grafana --> click on Dashboards --> Click on Import dashboard --> the id of dashboard is 16734 and click on load
+
+Scroll down and select prometheous data source -> click on Import
+
+
+
+Assignment 1:
+====================
+Use dashboard, 16734 and add the alert
+
+Assignment 2: Create your own dashboard
+=====================
+Panel 1 - CPU utilization
+
+avg(100 - (avg by (node) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100))
+
+Panel 2: Memory
+
+(sum (node_memory_MemTotal_bytes) - sum (node_memory_MemAvailable_bytes)) / sum (node_memory_MemTotal_bytes) * 100
+
+panel 3- file storage
+
+node_disk_filesystem_info
+===========================================================
+Grafana Rules:
+ 
+Create a dashboard with number : 16734
+Click on CPU utilization à moreà create a alert rule.
+ 
+
+ 
+CPU utilization:
+ 
+Query:	
+avg(100 - (avg by (node) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100))
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+===========================================================
+Integrating Grafana alerts with Slack using webhooks involves two main steps: 
+setting up an Incoming Webhook in Slack and configuring a Webhook contact point in Grafana.
+
+1. Set up Incoming Webhook in Slack:
+Create a Slack App: Navigate to the Slack API website  https://api.slack.com/apps?new_app=1
+
+ and create a new Slack app for your workspace.
+
+
+Enable Incoming Webhooks: Within your app's settings, go to "Features" > "Incoming Webhooks" and activate this feature.
+Add a New Webhook to Workspace: Click "Add New Webhook to Workspace," choose the desired Slack channel for notifications, and authorize the app.
+Copy Webhook URL: Slack will provide a unique Webhook URL. Copy this URL, as it will be used in Grafana.
+2. Configure Webhook Contact Point in Grafana:
+Navigate to Contact Points: In Grafana, hover over the Alerting (bell) icon in the sidebar and click "Contact points."
+Add New Contact Point: Click "+ Add contact point."
+Configure Webhook Integration:
+Provide a descriptive "Name" for the contact point (e.g., "Slack Webhook").
+From the "Integration" list, select "Webhook."
+Paste the copied Slack Webhook URL into the "URL" field.
+(Optional) Customize settings such as HTTP method, authentication, and message content if needed.
+Save and Test: Click "Save contact point." You can then click "Test" and "Send test notification" to verify the integration and ensure alerts are successfully sent to your Slack channel. 
+3. Create or Update Alert Rules:
+When creating or editing an alert rule in Grafana, ensure that the newly created Slack Webhook contact point is selected as a notification destination for that rule.
+
+
+
+Create a Kubernetes Dashboard in Grafana with Variables
+Step 1: Create a New Dashboard
+Open Grafana → left menu → Dashboards → + New Dashboard.
+Click Add a new panel (this will be our first chart).
+Keep it empty for now.
+
+Step 2: Add Variables
+Variables make dashboards interactive.
+🔹 Add Namespace Variable
+Go to Dashboard settings (⚙️) → Variables → Add variable.
+Name: namespace
+Type: Query
+Data source: Prometheus
+Query:
+label_values(kube_pod_info, namespace)
+ This lists all namespaces from Kubernetes.
+Click Update.
+
+🔹 Add Pod Variable
+Again, Add variable.
+Name: pod
+Type: Query
+Data source: Prometheus
+Query:
+label_values(kube_pod_info{namespace="$namespace"}, pod)
+This filters pods based on the selected namespace.
+Enable Multi-value (so you can select multiple pods).
+Click Update.
+
+Step 3: Create Panels
+🔹 Panel 1: CPU Usage per Pod
+Add a new panel.
+Query (Prometheus):
+sum(rate(container_cpu_usage_seconds_total{namespace="$namespace", pod=~"$pod"}[5m])) by (pod)
+ This shows CPU usage of selected pods.
+Visualization: Time series.
+Title: CPU Usage (per Pod).
+
+🔹 Panel 2: Memory Usage per Pod
+Add a new panel.
+Query:
+sum(container_memory_usage_bytes{namespace="$namespace", pod=~"$pod"}) by (pod)
+ Shows memory consumption per pod.
+Visualization: Time series.
+Title: Memory Usage (per Pod).
+
+🔹 Panel 3: Pod Restarts
+Add a new panel.
+Query:
+increase(kube_pod_container_status_restarts_total{namespace="$namespace", pod=~"$pod"}[30m])
+ Shows container restarts in the last 30 minutes.
+Visualization: Bar chart or Time series.
+Title: Pod Restarts.
+
+🔹 Panel 4: Node CPU Utilization
+Add a new panel.
+Query:
+100 - (avg by(node) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+ Shows percentage CPU usage per node.
+Title: Node CPU Utilization.
+
+Step 4: Save Dashboard
+Click Save → give it a name like “Kubernetes Overview”.
+At the top, you should now see dropdowns: namespace and pod.
+ 
+Step 5: Test
+Select a namespace (e.g., default).
+Select a pod (e.g., nginx-123).
+Watch panels update dynamically
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
